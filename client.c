@@ -79,10 +79,12 @@ int main(int argc, char* argv[])
 		return 0; 
 	}
 
+	printf("Assigning server port\n"); 
 	servAddr.sin_port = htons(servPort); 		// Server port 
+	printf("Successfully assigned server port\n"); 
 
 	// Establish the connection to the echo server 
-	if(connect(sock, (struct sockaddr *) & servAddr, sizeof(servAddr)) < 0)
+	if(connect(sock, (struct sockaddr *) &servAddr, sizeof(servAddr)) < 0)
 	{
 		printf("connect() failed"); 
 		return 0; 
@@ -90,7 +92,8 @@ int main(int argc, char* argv[])
 
 	// Receive a string back from the server
 	unsigned int totalBytesRcvd = 0; 		// Count the total number of bytes received 
-	fputs("Received: ", stdout); 
+	//fputs("Received: ", stdout); 
+	printf("Received: "); 
 	while(totalBytesRcvd < expectedStringLength)
 	{
 		char buffer[BUFSIZE]; 
@@ -107,6 +110,8 @@ int main(int argc, char* argv[])
 		buffer[numBytes] = '\0'; 
 
 		fputs(buffer, stdout); 					// Print the echo buffer 
+
+		printf("%s", buffer); 
 	}
 
 

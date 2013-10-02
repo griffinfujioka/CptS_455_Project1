@@ -6,7 +6,14 @@
 #include <arpa/inet.h>
 #include "DieWithMessage.c"
 
+enum sizeConstants {
+  MAXSTRINGLENGTH = 128,
+  BUFSIZE = 512,
+};
+
 static const int MAXPENDING = 5; 		// Maximum outstanding connection requests 
+
+void HandleTCPClient(int clntSocket); 
 
 int main(int argc, char* argv[])
 {
@@ -66,9 +73,21 @@ int main(int argc, char* argv[])
 
 		char clntName[INET_ADDRSTRLEN]; 		// String for client address
 		if(inet_ntop(AF_INET, &clntAddr.sin_addr.s_addr, clntName, sizeof(clntName)) != NULL)
-			printf("Handling client %s/$d\n", clntName, ntohs(clntAddr.sin_port)); 
+		{
+			printf("Handling client %s/%d\n", clntName, ntohs(clntAddr.sin_port));
+
+
+			// Send a welcome message to the client 
+			char* welcomeMessage = "Welcome to The Server\n";
+
+			printf("Attempting to send a welcome message...");
+			send(clntSock, welcomeMessage, strlen(welcomeMessage), 0); 
+			printf("Successfully sent a welcome message."); 
+		}		 
 		else
 			printf("Unable to get client address"); 
+
+		
 
 
 	}
@@ -83,4 +102,10 @@ int main(int argc, char* argv[])
 	printf("Press any key to exit..."); 
 	ch = getchar(); 
 	return 0; 
+}
+
+void HandleTCPClient(int clntSocket)
+{
+	char buffer [BUFSIZE]; 		// Buffer for string
+
 }
