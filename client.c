@@ -92,14 +92,23 @@ int main(int argc, char* argv[])
 
 	// Receive a string back from the server
 	unsigned int totalBytesRcvd = 0; 		// Count the total number of bytes received 
+	char buffer[BUFSIZE]; 
 	//fputs("Received: ", stdout); 
 	printf("Received: "); 
 	while(totalBytesRcvd < expectedStringLength)
 	{
-		char buffer[BUFSIZE]; 
+		
 
 		// Receive up to BUFSIZE - 1 to leave space for a null terminator bytes from the sender 
 		ssize_t numBytes = recv(sock, buffer, BUFSIZE - 1, 0);
+
+		printf("\nReceived %zu bytes from server...", numBytes); 
+
+		if(numBytes == 0)
+		{
+			printf("\nServer stopped sending data..."); 
+			break; 
+		}
 
 		if(numBytes < 0)
 			DieWithSystemMessage("recv() failed"); 
@@ -113,6 +122,17 @@ int main(int argc, char* argv[])
 
 		printf("%s", buffer); 
 	}
+
+
+	if(strcmp(buffer, "Welcome to The Server\n") != 0)
+	{
+		// We received something different than what we were expecting 
+		close(sock); 								// Close the connection
+		printf("\n\nServer response unrecognized. Closing connection...\n"); 	// Print an error message 
+		return 0; 
+
+	}
+
 
 
 	// Close the socket 
