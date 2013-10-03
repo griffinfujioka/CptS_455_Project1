@@ -74,15 +74,79 @@ int main(int argc, char* argv[])
 		char clntName[INET_ADDRSTRLEN]; 		// String for client address
 		if(inet_ntop(AF_INET, &clntAddr.sin_addr.s_addr, clntName, sizeof(clntName)) != NULL)
 		{
-			printf("Handling client %s/%d\n", clntName, ntohs(clntAddr.sin_port));
+			printf("\nHandling client %s/%d\n", clntName, ntohs(clntAddr.sin_port));
 
 
 			// Send a welcome message to the client 
 			char* welcomeMessage = "Welcome to The Server\n";
 
-			printf("Attempting to send a welcome message...");
+			printf("\nAttempting to send a welcome message...");
 			send(clntSock, welcomeMessage, strlen(welcomeMessage), 0); 
-			printf("Successfully sent a welcome message."); 
+			printf("\nSuccessfully sent a welcome message.\n"); 
+
+			char id_number[9]; 
+			char name[20]; 
+			int successfulID = 0; 
+			int successfulName = 0; 
+
+
+			// Receive the 8-digit, newline terminated ID number from the client 
+			int expectedLength = 9; 			// Hard-coded, but that's protocol I guess
+			unsigned int totalBytesRcvd = 0; 		// Count the total number of bytes received 
+
+			ssize_t numBytes = recv(clntSock, id_number, 9 - 1, 0);
+
+			if(numBytes < 0)
+				DieWithSystemMessage("recv() failed\n"); 
+			else if(numBytes == 0)
+				DieWithUserMessage("recv()", "connection closed prematurely\n"); 
+			else if(numBytes != 8)
+				DieWithUserMessage("recv()", "failed to receive 8-digit ID number\n"); 
+
+			// If we reach here, we know we've successfully received the ID number
+			successfulID = 1; 
+			totalBytesRcvd += numBytes; 			// Keep a tally of total bytes
+
+			id_number[numBytes] = '\0'; 
+
+			printf("\nReceived %zu bytes for the 8-digit ID number: %s", numBytes, id_number); 
+
+			printf("\nID number: %s", id_number); 
+
+			// Receive the (up to) 20 character, newline terminated name from the client 
+			expectedLength = 20; 			// Have to be prepared for at most 20 characters, it's the protocol!!
+			numBytes = recv(clntSock, name, 20 - 1, 0);
+
+			if(numBytes < 0)
+				DieWithSystemMessage("recv() failed"); 
+			else if(numBytes == 0)
+				DieWithUserMessage("recv()", "connection closed prematurely"); 
+
+			// Similar to above, if we make it here we know we've successfully received a name 
+			successfulName = 1; 
+
+			totalBytesRcvd += numBytes; 			// Keep a tally of total bytes
+
+			name[numBytes] = '\0'; 
+
+			printf("\nReceived %zu bytes for the (up to) 20 character name: %s", numBytes, name); 
+			printf("\nName: %s", name); 
+
+			if(!successfulName || !successfulID)
+			{
+				// If either one of them has failed, send a failure message back  
+				char* failure = "Failure"; 
+				send(clntSock, failure, strlen(failure), 0); 
+				printf("\nFailed to receive ID number or name, sending 'Failure' message to client."); 
+			}
+			else
+			{
+				// We've received the ID number and name successfully, so send a success message back 
+				char* success = "Success"; 
+				send(clntSock, success, strlen(success), 0); 
+				printf("\nSuccessfully received ID number and name, sending 'Success' message to client"); 
+			}
+
 		}		 
 		else
 			printf("Unable to get client address"); 

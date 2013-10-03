@@ -92,9 +92,7 @@ int main(int argc, char* argv[])
 
 	// Receive a string back from the server
 	unsigned int totalBytesRcvd = 0; 		// Count the total number of bytes received 
-	
-	//fputs("Received: ", stdout); 
-	printf("Received: "); 
+ 
 	while(totalBytesRcvd < expectedStringLength)
 	{
 		char buffer[BUFSIZE]; 
@@ -134,13 +132,8 @@ int main(int argc, char* argv[])
 
 		memset(&buffer[0], 0, BUFSIZE); 
 	}
-
-
 	
-
 	fflush(stdout); 
-
-
 
 	// Prompt the user to enter an 8-digit ID number and name (max 20 characters) from stdin
 	char id_number[9]; 
@@ -210,6 +203,29 @@ int main(int argc, char* argv[])
 		DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
 	printf("Successfully sent (%d bytes) to the server... Name: %s \n", numBytes, name);  
+
+	char successBuffer[8]; 			// We can use 7 because both "Success" and "Failure" are 7 letter words 
+	numBytes = recv(sock, successBuffer, 7, 0);
+
+	if(numBytes < 0)
+		DieWithSystemMessage("recv() failed\n"); 
+	else if(numBytes != 7)
+		DieWithUserMessage("rev()", "received unexpected number of bytes"); 
+
+	printf("numBytes = %d\n", numBytes); 
+
+	printf("Received message: %s", successBuffer); 
+
+	if(strncmp(successBuffer, "Success", 7) != 0)
+	{
+		// The message isn't 'Success', indicating that the server didn't receive either the ID number or the name 
+		DieWithSystemMessage("\nserver failed to receive ID number or name"); 
+	}
+
+	printf("\nThe server has successfully received the ID number and name."); 
+
+
+	printf("\n"); 
 
 
 	// Close the socket 
