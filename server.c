@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
 
 			// Send a welcome message to the client 
-			char* welcomeMessage = "Welcome to The Server Griffin\n";
+			char* welcomeMessage = "Welcome to The Server\n";
 
 			printf("Attempting to send a welcome message...");
 			send(clntSock, welcomeMessage, strlen(welcomeMessage), 0); 

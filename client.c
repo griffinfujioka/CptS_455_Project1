@@ -92,18 +92,19 @@ int main(int argc, char* argv[])
 
 	// Receive a string back from the server
 	unsigned int totalBytesRcvd = 0; 		// Count the total number of bytes received 
-	char buffer[BUFSIZE]; 
+	
 	//fputs("Received: ", stdout); 
 	printf("Received: "); 
 	while(totalBytesRcvd < expectedStringLength)
 	{
-		
+		char buffer[BUFSIZE]; 
 
 		// Receive up to BUFSIZE - 1 to leave space for a null terminator bytes from the sender 
 		ssize_t numBytes = recv(sock, buffer, BUFSIZE - 1, 0);
 
 		printf("\nReceived %zu bytes from server...", numBytes); 
 
+		// Not totally sure if this is working... How do we compare ssize_t numBytes?
 		if(numBytes == 0)
 		{
 			printf("\nServer stopped sending data..."); 
@@ -118,27 +119,103 @@ int main(int argc, char* argv[])
 		totalBytesRcvd += numBytes; 			// Keep a tally of total bytes
 		buffer[numBytes] = '\0'; 
 
-		fputs(buffer, stdout); 					// Print the echo buffer 
+		if(strcmp(buffer, "Welcome to The Server\n") != 0)
+		{
+			// We received something different than what we were expecting 
+			close(sock); 								// Close the connection
+			printf("\n\nServer response unrecognized. Closing connection...\n"); 	// Print an error message 
+			return 0; 
+
+		}
+
+		//fputs(buffer, stdout); 					// Print the echo buffer 
 
 		printf("%s", buffer); 
+
+		memset(&buffer[0], 0, BUFSIZE); 
 	}
 
 
-	if(strcmp(buffer, "Welcome to The Server\n") != 0)
+	
+
+	fflush(stdout); 
+
+
+
+	// Prompt the user to enter an 8-digit ID number and name (max 20 characters) from stdin
+	char id_number[9]; 
+	char name[20]; 
+	int n = 0; 
+
+	memset(&name[0], 0, 20); 
+	
+	//memset(&id_number[0], 0, sizeof(id_number)); 
+
+	printf("\nEnter ID: ");
+
+	while((ch = getchar()) != '\n' && n < 8)
 	{
-		// We received something different than what we were expecting 
-		close(sock); 								// Close the connection
-		printf("\n\nServer response unrecognized. Closing connection...\n"); 	// Print an error message 
-		return 0; 
-
+		id_number[n] = ch; 
+		n++; 
 	}
 
+	n = 0; 
+
+	printf("\nEnter name: "); 
+
+	while((ch = getchar()) != '\n' && n < 20)
+	{
+		name[n] = ch; 
+		n++; 
+	}
+	
+	n = 0; 
+
+
+	// Send the ID number and name to the server as two newline terminated strings 
+	while(id_number[n]) n++; 		// Add a newline terminator 
+	id_number[n] = '\n'; 
+
+	n = 0; 
+	while(name[n]) n++; 
+	name[n] = '\n'; 
+
+	// It's a good idea to conserve space here by only sending the bytes you need. 
+	// Namely, it would be good to remove the empty spaces in name
+	char shortenedName[n]; 
+	strncpy(shortenedName, name, n); 
+
+	int sizeOf_id_number = sizeof(id_number); 
+	int sizeOf_name = sizeof(name); 
+
+	printf("\nid_number is %d bytes\n", sizeOf_id_number); 
+	printf("\nname is %d bytes\n", sizeOf_name); 
+
+	ssize_t numBytes = send(sock, id_number, sizeOf_id_number, 0); 
+
+	if(numBytes < 0)
+		DieWithSystemMessage("send() failed\n"); 
+	else if(numBytes != sizeOf_id_number)
+		DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+	printf("Successfully sent (%d bytes) to the server... ID Number: %s \n", numBytes, id_number);  
+
+	numBytes = send(sock, name, sizeOf_name, 0); 
+
+	printf("numBytes = %d\n", numBytes); 
+
+	if(numBytes < 0)
+		DieWithSystemMessage("send() failed\n"); 
+	else if(numBytes != sizeOf_name)
+		DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+	printf("Successfully sent (%d bytes) to the server... Name: %s \n", numBytes, name);  
 
 
 	// Close the socket 
 	close(sock); 
 
-	printf("Press any key to exit..."); 
-	ch = getchar(); 
-	return 0; 
+	//printf("Press any key to exit..."); 
+	//ch = getchar(); 
+	//return 0; 
 }
