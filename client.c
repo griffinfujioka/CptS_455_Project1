@@ -184,45 +184,56 @@ int main(int argc, char* argv[])
 	printf("\nid_number is %d bytes\n", sizeOf_id_number); 
 	printf("\nname is %d bytes\n", sizeOf_name); 
 
-	ssize_t numBytes = send(sock, id_number, sizeOf_id_number, 0); 
+	int repeatSendCounter = 1; 
+	int successfullySent = 0; 
 
-	if(numBytes < 0)
-		DieWithSystemMessage("send() failed\n"); 
-	else if(numBytes != sizeOf_id_number)
-		DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
-	printf("Successfully sent (%d bytes) to the server... ID Number: %s \n", numBytes, id_number);  
-
-	numBytes = send(sock, name, sizeOf_name, 0); 
-
-	printf("numBytes = %d\n", numBytes); 
-
-	if(numBytes < 0)
-		DieWithSystemMessage("send() failed\n"); 
-	else if(numBytes != sizeOf_name)
-		DieWithUserMessage("send()", "sent unexpected number of bytes"); 
-
-	printf("Successfully sent (%d bytes) to the server... Name: %s \n", numBytes, name);  
-
-	char successBuffer[8]; 			// We can use 7 because both "Success" and "Failure" are 7 letter words 
-	numBytes = recv(sock, successBuffer, 7, 0);
-
-	if(numBytes < 0)
-		DieWithSystemMessage("recv() failed\n"); 
-	else if(numBytes != 7)
-		DieWithUserMessage("rev()", "received unexpected number of bytes"); 
-
-	printf("numBytes = %d\n", numBytes); 
-
-	printf("Received message: %s", successBuffer); 
-
-	if(strncmp(successBuffer, "Success", 7) != 0)
+	while(repeatSendCounter < 4 && !successfullySent)
 	{
-		// The message isn't 'Success', indicating that the server didn't receive either the ID number or the name 
-		DieWithSystemMessage("\nserver failed to receive ID number or name"); 
+		printf("\nSending ID number and name... Attempt #%d\n", repeatSendCounter); 
+		ssize_t numBytes = send(sock, id_number, sizeOf_id_number, 0); 
+
+		if(numBytes < 0)
+			DieWithSystemMessage("send() failed\n"); 
+		else if(numBytes != sizeOf_id_number)
+			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+		printf("Successfully sent (%d bytes) to the server... ID Number: %s \n", numBytes, id_number);  
+
+		numBytes = send(sock, name, sizeOf_name, 0); 
+
+		printf("numBytes = %d\n", numBytes); 
+
+		if(numBytes < 0)
+			DieWithSystemMessage("send() failed\n"); 
+		else if(numBytes != sizeOf_name)
+			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+		printf("Successfully sent (%d bytes) to the server... Name: %s \n", numBytes, name);  
+
+		char successBuffer[8]; 			// We can use 7 because both "Success" and "Failure" are 7 letter words 
+		numBytes = recv(sock, successBuffer, 7, 0);
+
+		if(numBytes < 0)
+			DieWithSystemMessage("recv() failed\n"); 
+		else if(numBytes != 7)
+			DieWithUserMessage("rev()", "received unexpected number of bytes"); 
+
+		printf("numBytes = %d\n", numBytes); 
+
+		printf("Received message: %s", successBuffer); 
+
+		if(strncmp(successBuffer, "Success", 7) == 0)
+		{
+			// The message is 'Success', indicating that the server received the ID number and the name 
+			printf("\nThe server has successfully received the ID number and name."); 
+			successfullySent = 1;
+		}
+
+		 repeatSendCounter++; 
 	}
 
-	printf("\nThe server has successfully received the ID number and name."); 
+
 
 
 	printf("\n"); 
