@@ -88,12 +88,14 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 			if(strncmp(currentName, name, nameLength) == 0 )
 			{
 				// We found our entry! 
-				printf("Sweet! The names match too!");
+				printf("\nSweet! The names match too!");
+				return 1; 
 			}
 			else
 			{
 				// The names don't match... 
-				printf("Error: name does not match."); 
+				printf("\nError: name does not match."); 
+				return 0; 
 			}
 
 			printf("\nhere"); 
@@ -332,7 +334,47 @@ int main(int argc, char* argv[])
 
 				// Look up the ID number and username in the datatable array 
 				// The format of the data is xxxxxxxx yyyyyyyyyyyyyyyyyyyy
-				LookUpIDNumberAndUsername(id_number, name); 
+				if(LookUpIDNumberAndUsername(id_number, name))
+				{
+					// We found the ID number and name 
+					// Receive a max. 512 byte password from the client 
+
+					printf("\nWe found the ID number and password."); 
+					char password[512]; 
+					char passwordLength[2]; 
+
+					numBytes = recv(clntSock, passwordLength, 2, 0); 
+
+					//ushort pLength = htons(passwordLength); 
+
+					printf("\nReceived: %s", passwordLength); 
+
+					
+
+					printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
+					printf("Password: %s", password); 
+
+					if(numBytes < 0)
+						DieWithSystemMessage("recv() failed"); 
+					else if(numBytes == 0)
+						DieWithUserMessage("recv()", "connection closed prematurely"); 
+
+					numBytes = recv(clntSock, password, 512, 0); 
+
+					if(numBytes < 0)
+						DieWithSystemMessage("recv() failed"); 
+					else if(numBytes == 0)
+						DieWithUserMessage("recv()", "connection closed prematurely"); 
+
+					printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
+					printf("Password: %s", password); 
+				}
+				else
+				{
+					// We did not find the ID number and name 
+				}
+
+				printf("Connection closed."); 
 
 
 			}

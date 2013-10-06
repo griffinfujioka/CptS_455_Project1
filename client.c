@@ -13,6 +13,19 @@ enum sizeConstants {
   BUFSIZE = 512,
 };
 
+// Convert an integer to it's binary representation 
+int int_to_binary(int n)
+{
+	char* bin; 
+	int temp;
+	int i = 0; 
+
+	for(i=31; i >= 0; i--)
+	{
+
+	}
+} 
+
 int main(int argc, char* argv[])
 {
 	char ch; 
@@ -232,6 +245,50 @@ int main(int argc, char* argv[])
 
 		 repeatSendCounter++; 
 	}
+
+	char password[512]; 
+	n=0; 
+
+	if(successfullySent)
+	{
+		// Prompt the user for a max. 512 character password
+		printf("\nEnter your password: "); 
+
+		while((ch = getchar()) != '\n' && n < 512)
+		{
+			password[n] = ch; 
+			n++; 
+		}
+
+		int passwordLength = strlen(password); 
+		printf("\nYour password is %d characters", passwordLength); 
+
+		// Send the length as a 2-byte binary number in network byte order
+		int bin = htons(passwordLength); 
+		printf("\nbin: %d", bin); 
+		ssize_t numBytes = send(sock, bin, 2, 0); 
+
+		if(numBytes < 0)
+			DieWithSystemMessage("send() failed\n"); 
+		else if(numBytes != sizeOf_id_number)
+			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+		numBytes = send(sock, password, 512, 0); 
+		
+		if(numBytes < 0)
+			DieWithSystemMessage("send() failed\n"); 
+		else if(numBytes != sizeOf_id_number)
+			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+		printf("\nSuccessfully sent (%d bytes) to the server... Password: %s \n", numBytes, password);  
+
+
+
+		// Send the password 
+
+	}
+
+
 
 
 
