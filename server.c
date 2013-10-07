@@ -14,6 +14,7 @@ enum sizeConstants {
 };
 
 char* datatable[DATATABLE_SIZE];
+char* idnumber_password_datatable[DATATABLE_SIZE]; 
 
 void initialize_datatable()
 {
@@ -21,6 +22,11 @@ void initialize_datatable()
 	datatable[1] = 0; 
 	datatable[2] = 0; 
 	datatable[3] = 0; 
+
+	idnumber_password_datatable[0] = "11044124 Fujioka32\0"; 
+	idnumber_password_datatable[1] = 0; 
+	idnumber_password_datatable[2] = 0; 
+	idnumber_password_datatable[3] = 0; 
 }
 
 // Look for the provided ID number and name in the datatable array, return 1 if found, else return false. 
@@ -43,11 +49,11 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 		name[strlen(name-1)] = '\0'; 
 		name[strlen(name+1)] = '\0'; 
 
-		printf("\nRemoved newline from name... See? %s blah", name); 
-
 	}
 
 	i = 0; 
+
+	printf("\n1"); 
 		
 
 	while(i < DATATABLE_SIZE)
@@ -98,7 +104,91 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 				return 0; 
 			}
 
-			printf("\nhere"); 
+		}
+
+		i++; 
+
+	}
+
+	return 0; 
+}
+
+int LookUpPassword(char id_number[8], char password[512])
+{
+	// Let's just go ahead and assume that if we've made it here, we know the id_number has a valid name 
+	// We're doing this because the assignment says "Don't do anything fancy"
+	int i = 0; 
+
+	if(password[0] == '\n')
+	{
+		printf("\nThere is a newline at the front the password"); 
+		while(i < strlen(password))
+		{
+
+			password[i] = password[i+1]; 
+			i++; 					// shift all the letters left by one
+		}
+
+		password[i] = '\0'; 
+		password[strlen(password)] = '\0'; 
+		password[strlen(password-1)] = '\0'; 
+		password[strlen(password+1)] = '\0'; 
+
+	}
+
+	i = 0; 
+		
+	printf("\n1"); 
+
+	while(i < DATATABLE_SIZE)
+	{
+
+		if(idnumber_password_datatable[i] == 0)
+			return 0; 
+
+
+
+		char currentID[8]; 
+		char currentPassword[512]; 
+		strncpy(currentID, idnumber_password_datatable[i], 8); 			// Copy the ID number into currentID 
+
+		
+
+		printf("\n%s vs. %s", currentID, id_number); 
+
+		if(strcmp(currentID, id_number) == 0)
+		{
+			// We found a matching ID number, now check if the name matches 
+			int cheating = 9; 
+
+			// This is a hack, but it's so beautiful, why fix it? 
+			while(cheating < 521 && (idnumber_password_datatable[i][cheating] != '\0' 
+				|| idnumber_password_datatable[i][cheating] != '\n'))
+			{
+
+				currentPassword[cheating - 9] = idnumber_password_datatable[i][cheating];
+				cheating++; 
+			}
+
+			currentPassword[cheating] = '\0'; 
+			int passwordLength = strlen(password); 
+			int currentPasswordLength = strlen(currentPassword); 
+
+			printf("\n%s vs. %s", password, currentPassword); 
+
+
+			if(strncmp(currentPassword, password, passwordLength) == 0 )
+			{
+				// We found our entry! 
+				printf("\nSweet! We found a password match!"); 
+				return 1; 
+			}
+			else
+			{
+				// The names don't match... 
+				printf("\nError: name does not match."); 
+				return 0; 
+			}
 
 		}
 
@@ -339,19 +429,23 @@ int main(int argc, char* argv[])
 					// We found the ID number and name 
 					// Receive a max. 512 byte password from the client 
 
-					printf("\nWe found the ID number and password."); 
+					printf("\nWe found the ID number and name, now we are waiting for the user password"); 
+
 					char password[512]; 
 					char passwordLength[2]; 
 
-					numBytes = recv(clntSock, passwordLength, 2, 0); 
+					expectedLength = 512; 
 
-					//ushort pLength = htons(passwordLength); 
+					totalBytesRcvd = 0; 
 
-					printf("\nReceived: %s", passwordLength); 
+					while(totalBytesRcvd < expectedLength)
+					{
+						numBytes = recv(clntSock, password, 511, 0); 
 
-					
+						totalBytesRcvd += numBytes; 
+					} 
 
-					printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
+					printf("\nReceived %d bytes for the (up to) 512 character password: %s", totalBytesRcvd, password); 
 					printf("Password: %s", password); 
 
 					if(numBytes < 0)
@@ -359,15 +453,22 @@ int main(int argc, char* argv[])
 					else if(numBytes == 0)
 						DieWithUserMessage("recv()", "connection closed prematurely"); 
 
-					numBytes = recv(clntSock, password, 512, 0); 
-
-					if(numBytes < 0)
-						DieWithSystemMessage("recv() failed"); 
-					else if(numBytes == 0)
-						DieWithUserMessage("recv()", "connection closed prematurely"); 
-
 					printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
-					printf("Password: %s", password); 
+					printf("\nPassword: %s", password); 
+
+					// Verify that the password matches ID number and name 
+					if(LookUpPassword(id_number, password))
+					{
+						printf("\nWe found the password."); 
+
+						// Send a message back to the client 
+						//char* congrats = "Congratulations " + name + ", you've just revealed the password for " + id_number + " to the world!";
+						//printf("%s", congrats); 
+					}
+					else
+					{
+						printf("\nPassword does not match."); 
+					}
 				}
 				else
 				{

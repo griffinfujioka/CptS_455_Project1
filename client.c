@@ -264,20 +264,13 @@ int main(int argc, char* argv[])
 		printf("\nYour password is %d characters", passwordLength); 
 
 		// Send the length as a 2-byte binary number in network byte order
-		int bin = htons(passwordLength); 
-		printf("\nbin: %d", bin); 
-		ssize_t numBytes = send(sock, bin, 2, 0); 
-
-		if(numBytes < 0)
-			DieWithSystemMessage("send() failed\n"); 
-		else if(numBytes != sizeOf_id_number)
-			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
-
-		numBytes = send(sock, password, 512, 0); 
 		
+
+		ssize_t numBytes = send(sock, password, 511, 0); 
+
 		if(numBytes < 0)
 			DieWithSystemMessage("send() failed\n"); 
-		else if(numBytes != sizeOf_id_number)
+		else if(numBytes != 511)
 			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
 		printf("\nSuccessfully sent (%d bytes) to the server... Password: %s \n", numBytes, password);  
