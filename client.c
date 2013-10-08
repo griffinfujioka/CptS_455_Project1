@@ -294,7 +294,8 @@ int main(int argc, char* argv[])
 			{
 				// This indicates a success message from the server
 				validPassword = 1; 
-				printf("\nValid password!");
+				printf("\nValid password! Closing the socket.");
+				close(sock); 
 			}
 			else if(numBytes == 128)
 			{
@@ -303,6 +304,13 @@ int main(int argc, char* argv[])
 				memset(&password[0], 0, 512); 
 				printf("\nInvalid password."); 
 			}
+		}
+
+		if(numFailures == 3)
+		{
+			// Our password has failed 3 times 
+			printf("Invalid password occurred 3 times... Closing the socket.");
+			close(sock); 
 		}
 		 
 

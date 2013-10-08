@@ -149,7 +149,7 @@ int LookUpPassword(char id_number[8], char password[512])
 		char currentPassword[512]; 
 		strncpy(currentID, idnumber_password_datatable[i], 8); 			// Copy the ID number into currentID 
 
-		
+
 
 		printf("\n%s vs. %s", currentID, id_number); 
 
@@ -172,6 +172,12 @@ int LookUpPassword(char id_number[8], char password[512])
 			int currentPasswordLength = strlen(currentPassword); 
 
 			printf("\n%s vs. %s", password, currentPassword); 
+
+			if(passwordLength != currentPasswordLength)
+			{
+				printf("\nPassword lengths don't match!"); 
+				return 0; 
+			}
 
 
 			if(strncmp(currentPassword, password, passwordLength) == 0 )
@@ -198,7 +204,6 @@ int LookUpPassword(char id_number[8], char password[512])
 
 static const int MAXPENDING = 5; 		// Maximum outstanding connection requests 
 
-void HandleTCPClient(int clntSocket); 
 
 int main(int argc, char* argv[])
 {
@@ -533,10 +538,4 @@ int main(int argc, char* argv[])
 	printf("Press any key to exit..."); 
 	ch = getchar(); 
 	return 0; 
-}
-
-void HandleTCPClient(int clntSocket)
-{
-	char buffer [BUFSIZE]; 		// Buffer for string
-
 }
