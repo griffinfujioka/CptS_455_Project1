@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
 
 	n = 0; 
 
-	printf("\nEnter name: "); 
+	printf("Enter name: "); 
 
 	while((ch = getchar()) != '\n' && n < 20)
 	{
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 	int sizeOf_id_number = sizeof(id_number); 
 	int sizeOf_name = sizeof(name); 
 
-	printf("\nid_number is %d bytes\n", sizeOf_id_number); 
+	printf("\nid_number is %d bytes", sizeOf_id_number); 
 	printf("\nname is %d bytes\n", sizeOf_name); 
 
 	int repeatSendCounter = 1; 
@@ -181,7 +181,8 @@ int main(int argc, char* argv[])
 
 	while(repeatSendCounter < 4 && !successfullySent)
 	{
-		printf("\nSending ID number and name... Attempt #%d\n", repeatSendCounter); 
+		printf("\nAttempt #%d", repeatSendCounter);
+		printf("\nSending ID number and name..."); 
 		ssize_t numBytes = send(sock, id_number, sizeOf_id_number, 0); 
 
 		if(numBytes < 0)
@@ -189,11 +190,10 @@ int main(int argc, char* argv[])
 		else if(numBytes != sizeOf_id_number)
 			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
-		printf("Successfully sent (%zu bytes) to the server... ID Number: %s \n", numBytes, id_number);  
+		printf("\nSuccessfully sent (%zu bytes) to the server... ID Number: %s \n", numBytes, id_number);  
 
 		numBytes = send(sock, name, sizeOf_name, 0); 
 
-		//printf("numBytes = %zu\n", numBytes); 
 
 		if(numBytes < 0)
 			DieWithSystemMessage("send() failed\n"); 
@@ -208,9 +208,7 @@ int main(int argc, char* argv[])
 		if(numBytes < 0)
 			DieWithSystemMessage("recv() failed\n"); 
 		else if(numBytes != 7)
-			DieWithUserMessage("rev()", "received unexpected number of bytes"); 
-
-		//printf("numBytes = %zu\n", numBytes); 
+			DieWithUserMessage("rev()", "received unexpected number of bytes");  
 
 		printf("Received message: %s", successBuffer); 
 
@@ -220,8 +218,14 @@ int main(int argc, char* argv[])
 			printf("\nThe server has successfully received the ID number and name."); 
 			successfullySent = 1;
 		}
+		repeatSendCounter++;
 
-		 repeatSendCounter++; 
+		if(strncmp(successBuffer, "Failure", 7) == 0 && repeatSendCounter > 3)
+		{
+			// The message is 'Failure', indicating that the server did not find the ID number and name 
+			printf("\nServer failed to find ID number and name combination. Server has closed the socket"); 
+			close(sock); 
+		} 
 	}
 
 	char password[512]; 
@@ -229,14 +233,21 @@ int main(int argc, char* argv[])
 
 	if(successfullySent)
 	{
+		// We've successfully sent the ID number and name
+		// Prompt the user for a max. 512 character password
 		int validPassword = 0; 
 		int numFailures = 0; 
 
+
 		while(!validPassword && numFailures < 3)
 		{
-			// We've successfully sent the ID number and name
-			// Prompt the user for a max. 512 character password
+			
+			memset(password, 0, 512); 		// Reset the password buffer 
+			n=0; 
+
+			
 			printf("\nEnter your password: "); 
+
 
 			while((ch = getchar()) != '\n' && n < 512)
 			{
@@ -302,19 +313,20 @@ int main(int argc, char* argv[])
 				// This indicates an invalid password from the server
 				numFailures++; 
 				memset(&password[0], 0, 512); 
-				printf("\nInvalid password."); 
+				printf("\nInvalid password. Please try again: "); 
 			}
 		}
 
 		if(numFailures == 3)
 		{
 			// Our password has failed 3 times 
-			printf("Invalid password occurred 3 times... Closing the socket.");
+			printf("\nInvalid password occurred 3 times... Closing the socket.");
 			close(sock); 
 		}
 		 
 
 	}
+
 
 
 
@@ -329,5 +341,5 @@ int main(int argc, char* argv[])
 
 	//printf("Press any key to exit..."); 
 	//ch = getchar(); 
-	//return 0; 
+	return 0; 
 }
