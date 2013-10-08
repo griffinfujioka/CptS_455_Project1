@@ -13,19 +13,6 @@ enum sizeConstants {
   BUFSIZE = 512,
 };
 
-// Convert an integer to it's binary representation 
-int int_to_binary(int n)
-{
-	char* bin; 
-	int temp;
-	int i = 0; 
-
-	for(i=31; i >= 0; i--)
-	{
-
-	}
-} 
-
 int main(int argc, char* argv[])
 {
 	char ch; 
@@ -33,12 +20,13 @@ int main(int argc, char* argv[])
 	char* servIP; 
 	in_port_t servPort; 
 
-	int expectedStringLength = strlen("Welcome to The Server\n"); 
+	// The response we're expecting from the server 
+	int expectedStringLength = strlen("Welcome to The Server\n"); 			
 
 
 	printf("Hello, welcome to the CLIENT PROGRAM!\n\n"); 
 
-	printf("%d arguments\n", argc); 
+	//printf("%d arguments\n", argc); 
 
 	// Check for the correct number of arguments
 	if(argc < 3 || argc > 4)
@@ -115,13 +103,6 @@ int main(int argc, char* argv[])
 
 		printf("\nReceived %zu bytes from server...", numBytes); 
 
-		// Not totally sure if this is working... How do we compare ssize_t numBytes?
-		if(numBytes == 0)
-		{
-			printf("\nServer stopped sending data..."); 
-			break; 
-		}
-
 		if(numBytes < 0)
 			DieWithSystemMessage("recv() failed"); 
 		else if(numBytes == 0)
@@ -139,9 +120,7 @@ int main(int argc, char* argv[])
 
 		}
 
-		//fputs(buffer, stdout); 					// Print the echo buffer 
-
-		printf("%s", buffer); 
+		printf("\nServer said: %s", buffer); 
 
 		memset(&buffer[0], 0, BUFSIZE); 
 	}
@@ -155,7 +134,6 @@ int main(int argc, char* argv[])
 
 	memset(&name[0], 0, 20); 
 	
-	//memset(&id_number[0], 0, sizeof(id_number)); 
 
 	printf("\nEnter ID: ");
 
@@ -187,7 +165,7 @@ int main(int argc, char* argv[])
 	name[n] = '\n'; 
 
 	// It's a good idea to conserve space here by only sending the bytes you need. 
-	// Namely, it would be good to remove the empty spaces in name
+	// Namely, it would be good to remove the empty spaces in name buffer
 	char shortenedName[n]; 
 	strncpy(shortenedName, name, n); 
 
@@ -215,7 +193,7 @@ int main(int argc, char* argv[])
 
 		numBytes = send(sock, name, sizeOf_name, 0); 
 
-		printf("numBytes = %zu\n", numBytes); 
+		//printf("numBytes = %zu\n", numBytes); 
 
 		if(numBytes < 0)
 			DieWithSystemMessage("send() failed\n"); 
@@ -232,7 +210,7 @@ int main(int argc, char* argv[])
 		else if(numBytes != 7)
 			DieWithUserMessage("rev()", "received unexpected number of bytes"); 
 
-		printf("numBytes = %zu\n", numBytes); 
+		//printf("numBytes = %zu\n", numBytes); 
 
 		printf("Received message: %s", successBuffer); 
 
@@ -251,48 +229,82 @@ int main(int argc, char* argv[])
 
 	if(successfullySent)
 	{
-		// Prompt the user for a max. 512 character password
-		printf("\nEnter your password: "); 
+		int validPassword = 0; 
+		int numFailures = 0; 
 
-		while((ch = getchar()) != '\n' && n < 512)
+		while(!validPassword && numFailures < 3)
 		{
-			password[n] = ch; 
-			n++; 
+			// We've successfully sent the ID number and name
+			// Prompt the user for a max. 512 character password
+			printf("\nEnter your password: "); 
+
+			while((ch = getchar()) != '\n' && n < 512)
+			{
+				password[n] = ch; 
+				n++; 
+			}
+
+			password[n] = '\0'; 
+
+			printf("Password length: %d", n); 
+
+			printf("\nPassword: %s", password); 
+
+			u_short passwordLength = n; 
+
+			uint32_t network_byte_order = htons(passwordLength); 
+			printf("\nnetwork_byte_order = %d", network_byte_order); 
+
+			int host_byte_order = ntohs(network_byte_order); 
+
+			printf("\nhost_byte_order = %d", host_byte_order); 
+
+			if(host_byte_order == passwordLength)
+				printf("... Which is the password length!"); 
+
+			//Send the length as a 2-byte binary number in network byte order
+			ssize_t numBytes = send(sock, &network_byte_order, sizeof(network_byte_order), 0); 
+
+			if(numBytes < 0)
+				DieWithSystemMessage("send() failed\n"); 
+			else if(numBytes != sizeof(network_byte_order))
+				DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+			printf("\nSuccessfully sent (%zu bytes) to the server... Password length: %d \n", numBytes, passwordLength);  
+
+
+			numBytes = send(sock, password, passwordLength, 0); 
+
+			if(numBytes < 0)
+				DieWithSystemMessage("send() failed\n"); 
+			else if(numBytes != passwordLength)
+				DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+			printf("\nSuccessfully sent (%zu bytes) to the server... Password: %s \n", numBytes, password); 
+
+			// Receive a success or invalid message from the server. 
+			char passwordValidationBuffer[BUFSIZE]; 
+			numBytes = recv(sock, passwordValidationBuffer, BUFSIZE, 0); 
+
+			printf("\nReceived %zu bytes from the server: %s", numBytes, passwordValidationBuffer); 
+
+			if(numBytes < 0)
+				DieWithSystemMessage("recv() failed\n"); 
+			else if(numBytes == 256)
+			{
+				// This indicates a success message from the server
+				validPassword = 1; 
+				printf("\nValid password!");
+			}
+			else if(numBytes == 128)
+			{
+				// This indicates an invalid password from the server
+				numFailures++; 
+				memset(&password[0], 0, 512); 
+				printf("\nInvalid password."); 
+			}
 		}
-
-		password[n] = '\0'; 
-
-		//printf("Password length: %d", n); 
-
-		printf("\nPassword: %s", password); 
-
-		//u_short passwordLength = n; // strlen(password);
-
-		// Here's where I tried to get the network byte order stuff working, it never did work. 
-		// printf("\nPassword length is %d", passwordLength); 
-		// u_short networkByteOrderPwdLength = htons(passwordLength); 
-		// printf("\nPassword length we will send: %d ", networkByteOrderPwdLength); ; 
-		// printf("\nYour password is %d characters, so we will send %zu bytes", passwordLength, sizeof(u_short)); 
-
-		// //Send the length as a 2-byte binary number in network byte order
-		// ssize_t numBytes = send(sock, &networkByteOrderPwdLength, sizeof(u_short), 0); 
-
-		// if(numBytes < 0)
-		// 	DieWithSystemMessage("send() failed\n"); 
-		// else if(numBytes != 2)
-		// 	DieWithUserMessage("send()", "sent unexpected number of bytes"); 
-
-		// printf("\nSuccessfully sent (%zu bytes) to the server... Password length: %d \n", numBytes, networkByteOrderPwdLength);  
-
-
-		ssize_t numBytes = send(sock, password, 511, 0); 
-
-		if(numBytes < 0)
-			DieWithSystemMessage("send() failed\n"); 
-		else if(numBytes != 511)
-			DieWithUserMessage("send()", "sent unexpected number of bytes"); 
-
-		printf("\nSuccessfully sent (%zu bytes) to the server... Password: %s \n", numBytes, password);  
+		 
 
 	}
 

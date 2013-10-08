@@ -36,7 +36,7 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 
 	if(name[0] == '\n')
 	{
-		printf("\nThere is a newline at the front the name"); 
+		//printf("\nThere is a newline at the front the name"); 
 		while(i < strlen(name))
 		{
 
@@ -52,8 +52,6 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 	}
 
 	i = 0; 
-
-	printf("\n1"); 
 		
 
 	while(i < DATATABLE_SIZE)
@@ -73,6 +71,7 @@ int LookUpIDNumberAndUsername(char id_number[8], char name[20])
 
 		if(strcmp(currentID, id_number) == 0)
 		{
+			printf("\nFound a matching ID number!"); 
 			// We found a matching ID number, now check if the name matches 
 			int cheating = 9; 
 
@@ -121,7 +120,7 @@ int LookUpPassword(char id_number[8], char password[512])
 
 	if(password[0] == '\n')
 	{
-		printf("\nThere is a newline at the front the password"); 
+		//printf("\nThere is a newline at the front the password"); 
 		while(i < strlen(password))
 		{
 
@@ -137,8 +136,6 @@ int LookUpPassword(char id_number[8], char password[512])
 	}
 
 	i = 0; 
-		
-	printf("\n1"); 
 
 	while(i < DATATABLE_SIZE)
 	{
@@ -211,13 +208,6 @@ int main(int argc, char* argv[])
 	initialize_datatable(); 
 
 	printf("Hello, welcome to the SERVER PROGRAM!\n\n"); 
-
-	/*printf("%d arguments provided\nArguments: \n", argc); 
-
-	for(i=0; i<argc; i++)
-	{
-		printf("\targv[%d] : %s\n", i, argv[i]); 
-	}*/ 
 
 	if(argc != 2)
 		DieWithUserMessage("Parameters:", "<Server Port>"); 
@@ -393,6 +383,7 @@ int main(int argc, char* argv[])
 			if(numFailures == 3)			// We've failed 3 times, close the socket 
 				close(clntSock); 
 
+
 			if(!successfulName || !successfulID)
 			{
 				printf("\nFailed to receive ID number or name, sending 'Failure' message to client."); 
@@ -405,7 +396,7 @@ int main(int argc, char* argv[])
 				else if(numBytes != 7)
 					DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
-				printf("Successfully sent (%zu bytes) to the server... Name: %s \n", numBytes, "Failure"); 
+				printf("Successfully sent (%zu bytes) to the client... Name: %s \n", numBytes, "Failure"); 
 				
 			}
 			else
@@ -422,103 +413,108 @@ int main(int argc, char* argv[])
 
 				printf("\nSuccessfully sent a Success message to the client... Only cost us %zu bytes! \n", numBytes, "Success");
 
+				int validPassword = 0; 
+				numFailures = 0; 
+
+				
 				// Look up the ID number and username in the datatable array 
 				// The format of the data is xxxxxxxx yyyyyyyyyyyyyyyyyyyy
 				if(LookUpIDNumberAndUsername(id_number, name))
 				{
-					// We found the ID number and name 
-					// Receive a max. 512 byte password from the client 
 
 					printf("\nWe found the ID number and name, now we are waiting for the user password"); 
 
-					char password[512]; 
-					u_short passwordLength; 
-
-					u_short pLength; 
-
-					// Here's where I tried to get the network byte order stuff working, it never did work. 
-					expectedLength = 512; 
-
-					totalBytesRcvd = 0; 
-
-					// Get the password length 
-					//numBytes = recv(clntSock, &passwordLength, sizeof(u_short), 0); 
-					//printf("\nnumBytes = %zu", numBytes); 
-
-					// if(numBytes < 0)
-					// 	DieWithSystemMessage("recv() failed\n"); 
-					// else if(numBytes == 0)
-					// 	DieWithUserMessage("recv()", "connection closed prematurely\n"); 
-					// else if(numBytes != 2)
-					// 	DieWithUserMessage("recv()", "failed to receive password length\n"); 
-
-					// pLength = ntohs(passwordLength); 
-
-					// printf("\npLength = %d", pLength); 
-
-
-					// printf("\npasswordLength = %d", passwordLength); 
-
-					
-					// Get the password 
-					//numBytes = recv(clntSock, password, 511, 0); 
-
-					if(numBytes < 0)
-						DieWithSystemMessage("recv() failed\n"); 
-					else if(numBytes == 0)
-						DieWithUserMessage("recv()", "connection closed prematurely\n"); 
-					//else if(numBytes != passwordLength)
-					//	DieWithUserMessage("recv()", "failed to receive password\n"); 
-
-
-					totalBytesRcvd = 0; 
-
-					while(totalBytesRcvd < expectedLength)
+					while(!validPassword && numFailures < 3)
 					{
-						numBytes = recv(clntSock, password, 511, 0); 
+						// We found the ID number and name 
+						// Receive a max. 512 byte password from the client 
+						printf("\nPassword attempt #%d", numFailures + 1); 
+						char password[512]; 
+						uint32_t passwordLength; 
 
-						totalBytesRcvd += numBytes; 
-					} 
+						int pLength; 
 
-					printf("\nReceived %d bytes for the (up to) 512 character password: %s", totalBytesRcvd, password); 
-					printf("Password: %s", password); 
+						// Here's where I tried to get the network byte order stuff working, it never did work. 
+						expectedLength = 512; 
 
-					if(numBytes < 0)
-						DieWithSystemMessage("recv() failed"); 
-					else if(numBytes == 0)
-						DieWithUserMessage("recv()", "connection closed prematurely"); 
+						totalBytesRcvd = 0; 
 
-					printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
-					printf("\nPassword: %s", password); 
+						// Get the password length 
 
-					// Verify that the password matches ID number and name 
-					if(LookUpPassword(id_number, password))
-					{
+						while(totalBytesRcvd < sizeof(uint32_t))
+						{
+							numBytes = recv(clntSock, &passwordLength, sizeof(uint32_t), 0); 
 
-						// Send a message back to the client 
-						char congrats[256] = "\n\nCongratulations ";
-						strcat(congrats, name); 
-						strcat(congrats, ", you've just revealed the password for "); 
-						strcat(congrats, id_number);
-						strcat(congrats, " to the world!!!! \n\nMuaahhahaha *evil genius laugh*");
-						printf("%s", congrats); 
+							totalBytesRcvd += numBytes; 
+						}
+						
+
+						if(numBytes < 0)
+							DieWithSystemMessage("recv() failed\n"); 
+						else if(numBytes == 0)
+							DieWithUserMessage("recv()", "connection closed prematurely\n"); 
+						else if(numBytes != sizeof(uint32_t))
+							DieWithUserMessage("recv()", "failed to receive password length\n"); 
+
+						pLength = ntohs(passwordLength); 
+
+						printf("\nPassword length = %d", pLength);
+
+
+						totalBytesRcvd = 0; 
+
+						while(totalBytesRcvd < pLength)
+						{
+							numBytes = recv(clntSock, password, pLength, 0); 
+
+							totalBytesRcvd += numBytes; 
+						} 
+
+						printf("\nReceived %zu bytes for the (up to) 512 character password: %s", numBytes, password); 
+						printf("\nPassword: %s", password); 
+
+						// Verify that the password matches ID number and name 
+						if(LookUpPassword(id_number, password))
+						{
+
+							// Send a message back to the client 
+							char congrats[256] = "\n\nCongratulations ";
+							strcat(congrats, name); 
+							strcat(congrats, ", you've just revealed the password for "); 
+							strcat(congrats, id_number);
+							strcat(congrats, " to the world!!!! \n\nMuaahhahaha *evil genius laugh*");
+							printf("%s", congrats); 
+
+							numBytes = send(clntSock, congrats, 256, 0); 
+
+							if(numFailures < 0)
+								DieWithSystemMessage("send() failed"); 
+
+							validPassword = 1; 
+						}
+						else
+						{
+							char invalid[128] = "Password incorrect";
+							printf("\nPassword incorrect."); 
+
+							numBytes = send(clntSock, invalid, 128, 0); 
+
+							if(numFailures < 0)
+								DieWithSystemMessage("send() failed"); 
+
+							numFailures++; 
+
+							printf("\nClient has failed %d times", numFailures); 
+
+							memset(&password[0], 0, 512); 
+						}
 					}
-					else
-					{
-						printf("\nPassword does not match."); 
-					}
 
-					printf("\nNow what?"); 
 				}
-				else
-				{
-					// We did not find the ID number and name 
-				}
+			}
+				
 
 				printf("Connection closed."); 
-
-
-			}
 
 		}		 
 		else
