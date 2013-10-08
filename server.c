@@ -257,20 +257,8 @@ int main(int argc, char* argv[])
 
 			while((!successfulName && !successfulID) && numFailures < 3)
 			{
-				printf("\nFailed to receive ID number or name, sending 'Failure' message to client."); 
-				// If either one of them has failed, send a failure message back  
-				char* failure = "Failure"; 
-				numBytes = send(clntSock, failure, strlen(failure), 0); 
 
-				if(numBytes < 0)
-					DieWithSystemMessage("send() failed\n"); 
-				else if(numBytes != 7)
-					DieWithUserMessage("send()", "sent unexpected number of bytes"); 
-
-				printf("Successfully sent (%zu bytes) to the server... Name: %s \n", numBytes, "Failure"); 
-
-				// Try again 
-				ssize_t numBytes = recv(clntSock, id_number, 9 - 1, 0);
+				numBytes = recv(clntSock, id_number, 8, 0);
 
 				if(numBytes < 0)
 					DieWithSystemMessage("recv() failed\n"); 
@@ -301,14 +289,34 @@ int main(int argc, char* argv[])
 				// Similar to above, if we make it here we know we've successfully received a name 
 				successfulName = 1; 
 
+
+
 				totalBytesRcvd += numBytes; 			// Keep a tally of total bytes
 
 				name[numBytes] = '\0'; 
 
+				if(LookUpIDNumberAndUsername(id_number, name))
+				{
+					printf("\nFailed to find ID number and password, breaking.");
+					break;
+				}
+					 
+
 				printf("\nReceived %zu bytes for the (up to) 20 character name: %s", numBytes, name); 
 				printf("Name: %s", name); 
+				printf("\nFailed to receive ID number or name, sending 'Failure' message to client."); 
+				// If either one of them has failed, send a failure message back  
+				char* failure = "Failure"; 
+				numBytes = send(clntSock, failure, strlen(failure), 0); 
 
-				numBytes = 0; 
+				if(numBytes < 0)
+					DieWithSystemMessage("send() failed\n"); 
+				else if(numBytes != 7)
+					DieWithUserMessage("send()", "sent unexpected number of bytes"); 
+
+				printf("Successfully sent (%zu bytes) to the server... Name: %s \n", numBytes, "Failure"); 
+				totalBytesRcvd += numBytes; 
+
 
 				if(!successfulName && !successfulID)
 					numFailures++; 
@@ -337,12 +345,12 @@ int main(int argc, char* argv[])
 
 				printf("\nSuccessfully sent (%zu bytes) to the client...: %s \n", numBytes, "Failure");
 				printf("\nFailed to receive ID number or name 3 times, closing socket."); 
-				close(clntSock);  
+				//close(clntSock);  
 				
 			}
-			else if(!LookUpIDNumberAndUsername(id_number, name) || numFailures >= 3)
+			else if(!LookUpIDNumberAndUsername(id_number, name))
 			{
-				printf("\nFailed to find ID number and name combination... Closing socket."); 
+				printf("\nFailed to find ID number and name combination... ."); 
 				char* failure = "Failure"; 
 				numBytes = send(clntSock, failure, strlen(failure), 0); 
 
@@ -352,7 +360,11 @@ int main(int argc, char* argv[])
 					DieWithUserMessage("send()", "sent unexpected number of bytes"); 
 
 				printf("\nSuccessfully sent (%zu bytes) to the client...: %s \n", numBytes, "Failure");
-				close(clntSock); 
+
+				
+
+
+				//close(clntSock); 
 			}
 			else
 			{
@@ -479,10 +491,12 @@ int main(int argc, char* argv[])
 
 					printf("\nSuccessfully sent a Failure message to the client... Only cost us %zu bytes! \n", numBytes);
 				}
+
+				printf("\nServer is ready for more connections."); 
 			}
 				
 
-		printf("\nConnection closed.\nServer is ready for incoming connections."); 
+		//printf("\nConnection closed.\nServer is ready for incoming connections."); 
 
 		}		 
 		else

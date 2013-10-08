@@ -122,66 +122,70 @@ int main(int argc, char* argv[])
 
 		printf("\nServer said: %s", buffer); 
 
-		memset(&buffer[0], 0, BUFSIZE); 
+		memset(buffer, 0, BUFSIZE); 
 	}
 	
 	fflush(stdout); 
 
-	// Prompt the user to enter an 8-digit ID number and name (max 20 characters) from stdin
-	char id_number[9]; 
-	char name[20]; 
-	int n = 0; 
-
-	memset(&name[0], 0, 20); 
-	
-
-	printf("\nEnter ID: ");
-
-	while((ch = getchar()) != '\n' && n < 8)
-	{
-		id_number[n] = ch; 
-		n++; 
-	}
-
-	n = 0; 
-
-	printf("Enter name: "); 
-
-	while((ch = getchar()) != '\n' && n < 20)
-	{
-		name[n] = ch; 
-		n++; 
-	}
-	
-	n = 0; 
-
-
-	// Send the ID number and name to the server as two newline terminated strings 
-	while(id_number[n]) n++; 		// Add a newline terminator 
-	id_number[n] = '\n'; 
-
-	n = 0; 
-	while(name[n]) n++; 
-	name[n] = '\n'; 
-
-	// It's a good idea to conserve space here by only sending the bytes you need. 
-	// Namely, it would be good to remove the empty spaces in name buffer
-	char shortenedName[n]; 
-	strncpy(shortenedName, name, n); 
-
-	int sizeOf_id_number = sizeof(id_number); 
-	int sizeOf_name = sizeof(name); 
-
-	printf("\nid_number is %d bytes", sizeOf_id_number); 
-	printf("\nname is %d bytes\n", sizeOf_name); 
 
 	int repeatSendCounter = 1; 
 	int successfullySent = 0; 
+	int n = 0; 
 
 
 	while(repeatSendCounter < 4 && !successfullySent)
 	{
-		printf("\nAttempt #%d", repeatSendCounter);
+		// Prompt the user to enter an 8-digit ID number and name (max 20 characters) from stdin
+		char id_number[9]; 
+		char name[20]; 
+		
+
+		memset(name, 0, 20); 
+		memset(id_number, 0, 9);
+
+		n=0; 
+		
+
+		printf("\nEnter ID: ");
+
+		while((ch = getchar()) != '\n' && n < 8)
+		{
+			id_number[n] = ch; 
+			n++; 
+		}
+
+		n = 0; 
+
+		printf("Enter name: "); 
+
+		while((ch = getchar()) != '\n' && n < 20)
+		{
+			name[n] = ch; 
+			n++; 
+		}
+		
+		n = 0; 
+
+
+		// Send the ID number and name to the server as two newline terminated strings 
+		while(id_number[n]) n++; 		// Add a newline terminator 
+		id_number[n] = '\n'; 
+
+		n = 0; 
+		while(name[n]) n++; 
+		name[n] = '\n'; 
+
+		// It's a good idea to conserve space here by only sending the bytes you need. 
+		// Namely, it would be good to remove the empty spaces in name buffer
+		char shortenedName[n]; 
+		strncpy(shortenedName, name, n); 
+
+		int sizeOf_id_number = sizeof(id_number); 
+		int sizeOf_name = sizeof(name); 
+
+		printf("\nid_number is %d bytes", sizeOf_id_number); 
+		printf("\nname is %d bytes\n", sizeOf_name); 
+		printf("\n\nAttempt #%d", repeatSendCounter);
 		printf("\nSending ID number and name..."); 
 		ssize_t numBytes = send(sock, id_number, sizeOf_id_number, 0); 
 
@@ -202,7 +206,8 @@ int main(int argc, char* argv[])
 
 		printf("Successfully sent (%zu bytes) to the server... Name: %s \n", numBytes, name);  
 
-		char successBuffer[8]; 			// We can use 7 because both "Success" and "Failure" are 7 letter words 
+		char successBuffer[7]; 			// We can use 7 because both "Success" and "Failure" are 7 letter words 
+
 		numBytes = recv(sock, successBuffer, 7, 0);
 
 		if(numBytes < 0)
